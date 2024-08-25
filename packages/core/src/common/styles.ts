@@ -81,8 +81,15 @@ export interface Theme {
     fontFamily: string;
     editorFontSize: string;
     lineHeight: number;
+    padding: {
+        
+            top: number;
+            bottom: number;
+            left: number;
+            right: number;
+    }
 
-    resizeIndicatorColor?: string;
+    resizeIndicatorColor?: string;  
     horizontalBorderColor?: string;
     headerBottomBorderColor?: string;
     roundingRadius?: number;
@@ -118,7 +125,7 @@ const dataEditorBaseTheme: Theme = {
     borderColor: "rgba(115, 116, 131, 0.16)",
     drilldownBorder: "rgba(0, 0, 0, 0)",
 
-    linkColor: "#353fb5",
+    linkColor: "#4F5DFF",
 
     cellHorizontalPadding: 8,
     cellVerticalPadding: 3,
@@ -132,6 +139,13 @@ const dataEditorBaseTheme: Theme = {
         "Inter, Roboto, -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Ubuntu, noto, arial, sans-serif",
     editorFontSize: "13px",
     lineHeight: 1.4, //unitless scaler depends on your font
+    padding: {
+        
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+    }
 };
 
 export interface FullTheme extends Theme {

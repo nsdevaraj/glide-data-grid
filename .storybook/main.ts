@@ -4,7 +4,11 @@ import { mergeConfig } from "vite";
 
 export default {
     stories: ["../**/src/**/*.stories.tsx"],
-    addons: [getAbsolutePath("@storybook/addon-storysource"), getAbsolutePath("@storybook/addon-controls")],
+    addons: [
+        getAbsolutePath("@storybook/addon-storysource"),
+        getAbsolutePath("@storybook/addon-controls"),
+        "@chromatic-com/storybook"
+    ],
 
     typescript: {
         reactDocgen: false,
@@ -21,9 +25,7 @@ export default {
         options: {},
     },
 
-    docs: {
-        autodocs: false,
-    },
+    docs: {},
 };
 
 function getAbsolutePath(value) {

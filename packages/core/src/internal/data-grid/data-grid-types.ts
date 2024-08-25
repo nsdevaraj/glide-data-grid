@@ -24,8 +24,39 @@ export interface GridSelection {
     readonly rows: CompactSelection;
 }
 
+export function gridSelectionHasItem(sel: GridSelection, item: Item): boolean {
+    const [col, row] = item;
+    if (sel.columns.hasIndex(col) || sel.rows.hasIndex(row)) return true;
+    if (sel.current !== undefined) {
+        if (sel.current.cell[0] === col && sel.current.cell[1] === row) return true;
+        const toCheck = [sel.current.range, ...sel.current.rangeStack];
+        for (const r of toCheck) {
+            if (col >= r.x && col < r.x + r.width && row >= r.y && row < r.y + r.height) return true;
+        }
+    }
+    return false;
+}
 /** @category Types */
 export type ImageEditorType = React.ComponentType<OverlayImageEditorProps>;
+/** @category Types */
+export type GridMouseEventArgs =
+    | GridMouseCellEventArgs
+    | GridMouseHeaderEventArgs
+    | GridMouseOutOfBoundsEventArgs
+    | GridMouseGroupHeaderEventArgs;
+
+interface PreventableEvent {
+    preventDefault: () => void;
+}
+/** @category Types */
+export interface CellClickedEventArgs extends GridMouseCellEventArgs, PreventableEvent {}
+
+/** @category Types */
+export interface HeaderClickedEventArgs extends GridMouseHeaderEventArgs, PreventableEvent {}
+
+/** @category Types */
+export interface GroupHeaderClickedEventArgs extends GridMouseGroupHeaderEventArgs, PreventableEvent {}
+ 
 
 /** @category Types */
 export const BooleanEmpty = null;
@@ -37,7 +68,79 @@ export type BooleanEmpty = null;
 /** @category Types */
 export type BooleanIndeterminate = undefined;
 
+interface PositionableMouseEventArgs {
+    readonly localEventX: number;
+    readonly localEventY: number;
+}
 /** @category Types */
+
+
+/** @category Types */
+export interface GridMouseCellEventArgs extends BaseGridMouseEventArgs, PositionableMouseEventArgs {
+    readonly kind: "cell";
+    readonly location: Item;
+    readonly bounds: Rectangle;
+    readonly isFillHandle: boolean;
+}
+
+/** @category Types */
+export const headerKind = "header" as const;
+/** @category Types */
+export interface GridMouseHeaderEventArgs extends BaseGridMouseEventArgs, PositionableMouseEventArgs {
+    readonly kind: typeof headerKind;
+    readonly location: readonly [number, -1];
+    readonly bounds: Rectangle;
+    readonly group: string | string[];
+}
+
+/** @category Types */
+export const groupHeaderKind = "group-header" as const;
+/** @category Types */
+export interface GridMouseGroupHeaderEventArgs extends BaseGridMouseEventArgs, PositionableMouseEventArgs {
+    readonly kind: typeof groupHeaderKind;
+    readonly location: readonly [number, -2];
+    readonly bounds: Rectangle;
+    readonly group: string;
+}
+
+/** @category Types */
+export const outOfBoundsKind = "out-of-bounds" as const;
+/** @category Types */
+export interface GridMouseOutOfBoundsEventArgs extends BaseGridMouseEventArgs {
+    readonly kind: typeof outOfBoundsKind;
+    readonly location: Item;
+    readonly direction: readonly [-1 | 0 | 1, -1 | 0 | 1];
+}
+
+/** @category Types */
+export interface GridKeyEventArgs {
+    readonly bounds: Rectangle | undefined;
+    readonly key: string;
+    readonly keyCode: number;
+    readonly altKey: boolean;
+    readonly shiftKey: boolean;
+    readonly ctrlKey: boolean;
+    readonly metaKey: boolean;
+    readonly cancel: () => void;
+    readonly stopPropagation: () => void;
+    readonly preventDefault: () => void;
+    readonly rawEvent: React.KeyboardEvent<HTMLElement> | undefined;
+    readonly location: Item | undefined;
+}
+
+interface DragHandler {
+    readonly setData: (mime: string, payload: string) => void;
+    readonly setDragImage: (image: Element, x: number, y: number) => void;
+    readonly preventDefault: () => void;
+    readonly defaultPrevented: () => boolean;
+}
+
+/** @category Types */
+export type GridDragEventArgs = GridMouseEventArgs & DragHandler;
+
+/** @category Types */
+export type TrailingRowType = "sticky" | "appended" | "none";
+
 export type DrawHeaderCallback = (
     args: {
         ctx: CanvasRenderingContext2D;
@@ -51,10 +154,11 @@ export type DrawHeaderCallback = (
         hasSelectedCell: boolean;
         spriteManager: SpriteManager;
         menuBounds: Rectangle;
+        imageLoader:ImageWindowLoader;
     },
     drawContent: () => void
 ) => void;
-
+ 
 /** @category Types */
 export type DrawCellCallback = (
     args: {
@@ -72,6 +176,24 @@ export type DrawCellCallback = (
     },
     drawContent: () => void
 ) => void;
+/** @category Types */
+
+export type DrawGroupCallback = (
+    args: {
+        ctx: CanvasRenderingContext2D;
+        theme: Theme;
+        groupTheme: Theme;
+        rect: Rectangle;
+        level: number;
+        span: Item;
+        name: string;
+        displayName?: string;
+        icon?: string; 
+        isHovered: boolean;
+        spriteManager: SpriteManager;
+    },
+    drawContent: () => void
+) => boolean;
 
 /** @category Cells */
 export enum GridCellKind {
@@ -142,6 +264,15 @@ export type CellArray = readonly (readonly GridCell[])[];
  * @category Types
  */
 export type Item = readonly [col: number, row: number];
+
+/** @category Types */
+export const headerCellCheckboxPrefix = "___gdg_header_cell_";
+/** @category Types */
+export const headerCellCheckedMarker = headerCellCheckboxPrefix + "checked";
+/** @category Types */
+export const headerCellUnheckedMarker = headerCellCheckboxPrefix + "unchecked";
+/** @category Types */
+export const headerCellIndeterminateMarker = headerCellCheckboxPrefix + "indeterminate";
 
 export interface BaseGridColumn {
     readonly title: string;
@@ -269,7 +400,7 @@ export function isReadWriteCell(cell: GridCell): cell is ReadWriteGridCell {
     ) {
         return cell.readonly !== true;
     }
-    assertNever(cell, "A cell was passed with an invalid kind");
+    return false; // Replace assertNever with a simple false return
 }
 
 /** @category Cells */
@@ -676,4 +807,13 @@ export class CompactSelection {
             }
         }
     }
+}
+/** Visible Cell Meta */
+export interface VisibleCellMeta {
+    row: number,
+    col: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
 }
