@@ -570,7 +570,8 @@ function drawMultiLineText(
     bias: number,
     theme: FullTheme,
     contentAlign?: BaseGridCell["contentAlign"],
-    hyperWrapping?: boolean
+    hyperWrapping?: boolean,
+    underline?: { enabled: boolean, color?: string }, 
 ) {
     const fontStyle = theme.baseFontFull;
     const split = splitText(ctx, data, fontStyle, w - theme.cellHorizontalPadding * 2, hyperWrapping ?? false);
@@ -591,7 +592,7 @@ function drawMultiLineText(
     const optimalY = y + h / 2 - actualHeight / 2;
     let drawY = Math.max(y + theme.cellVerticalPadding, optimalY);
     for (const line of split) {
-        drawSingleTextLine(ctx, line, x, drawY, w, emHeight, bias, theme, contentAlign);
+        drawSingleTextLine(ctx, line, x, drawY, w, emHeight, bias, theme, contentAlign, underline);
         drawY += lineHeight;
         if (drawY > y + h) break;
     }
@@ -651,7 +652,7 @@ export function drawTextCell(
         if (!allowWrapping) {
             drawSingleTextLine(ctx, data, x, y, w, h, bias, theme, contentAlign, underline);
         } else {
-            drawMultiLineText(ctx, data, x, y, w, h, bias, theme, contentAlign, hyperWrapping);
+            drawMultiLineText(ctx, data, x, y, w, h, bias, theme, contentAlign, hyperWrapping, underline);
         }
 
         if (changed) {
